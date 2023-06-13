@@ -5,39 +5,42 @@ import { loadStripe } from '@stripe/stripe-js';
 
 const PaymentPage = () => {
   const handlePayment = async () => {
-    const stripe = await loadStripe('YOUR_STRIPE_PUBLIC_KEY');
-    // Create a payment intent or perform any necessary steps with your backend
+    const stripe = await loadStripe('pk_test_51NI47USGWlkgXwLzApiQKKVZckRCR7cVcmLHxDq7BqMLdb1KR7FQgrognX4pq2B1TrEMLvHn4ql7kPIlYInUeWEb00cLxdpiQM');
 
-    // Redirect to the Stripe checkout page
-    const { error } = await stripe.redirectToCheckout({
-      // Include the necessary payment details
-      lineItems: [{ price: 'YOUR_PRODUCT_PRICE_ID', quantity: 1 }],
-      mode: 'payment',
-      successUrl: 'https://your-website.com/success', // Redirect URL after successful payment
-      cancelUrl: 'https://your-website.com/cancel', // Redirect URL after canceled payment
-    });
-
-    if (error) {
-      // Handle the error
-      console.error(error);
-    } else {
-      // Payment succeeded, make an API request to your backend server
-      const response = await fetch('https://your-backend-server.com/payment/success', {
+    try {
+      // Create a payment intent or perform any necessary steps with your backend
+      const response = await fetch('http://localhost:4000/create-payment-intent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ paymentId: 'REPLACE_WITH_STRIPE_PAYMENT_ID' }), // Include the Stripe payment ID
+        body: JSON.stringify({
+          // Include any additional payment details you need to pass to the backend
+        }),
       });
 
-      if (response.ok) {
-        // Payment details successfully retrieved, handle the response
-        const paymentDetails = await response.json();
-        console.log(paymentDetails);
-      } else {
-        // Handle the API request error
-        console.error('Failed to retrieve payment details from the backend');
+      if (!response.ok) {
+        throw new Error('Failed to create payment intent');
       }
+
+      const { clientSecret } = await response.json();
+
+      // Redirect to the Stripe checkout page
+      const { error } = await stripe.redirectToCheckout({
+        clientSecret,
+        // Include the necessary payment details
+        lineItems: [{ price: 'YOUR_PRODUCT_PRICE_ID', quantity: 1 }],
+        mode: 'payment',
+        successUrl: 'http://localhost:4000/success', // Redirect URL after successful payment
+        cancelUrl: 'http://localhost:4000/cancel', // Redirect URL after canceled payment
+      });
+
+      if (error) {
+        // Handle the error
+        console.error(error);
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
